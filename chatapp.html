@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>chatApp</title>
+  <style>
+    #output li {
+      background: #ccc;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>realtime chat</h1>
+  <!-- 入力場所を作成しよう -->
+  <form>
+    <fieldset>
+      <legend>チャット入力画面</legend>
+      <div>
+        name: <input type="text" id="name">
+      </div>
+      <div>
+        text: <input type="text" id="text">
+      </div>
+      <div>
+        <button type="button" id="send">send</button>
+      </div>
+    </fieldset>
+  </form>
+
+  <!-- データ出力場所 -->
+  <ul id="output"></ul>
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+  <script>
+    // 日時をいい感じの形式にする関数
+    function convertTimestampToDatetime(timestamp) {
+      const _d = timestamp ? new Date(timestamp * 1000) : new Date();
+      const Y = _d.getFullYear();
+      const m = (_d.getMonth() + 1).toString().padStart(2, '0');
+      const d = _d.getDate().toString().padStart(2, '0');
+      const H = _d.getHours().toString().padStart(2, '0');
+      const i = _d.getMinutes().toString().padStart(2, '0');
+      const s = _d.getSeconds().toString().padStart(2, '0');
+      return `${Y}/${m}/${d} ${H}:${i}:${s}`;
+    }
+  </script>
+  <!-- 以下にfirebaseのコードを貼り付けよう -->
+  <script type="module">
+    // Import the functions you need from the SDKs you need
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-app.js";
+    // TODO: Add SDKs for Firebase products that you want to use
+    // https://firebase.google.com/docs/web/setup#available-libraries
+
+
+    //ここから自分で追加するーーーーーーーーーーーーーーーーーーーーー
+    import {
+      getFirestore,
+      collection,
+      addDoc,
+      serverTimestamp,
+      onSnapshot,//←データベース上でデータの変更が発生したタイミングで{}内の処理を実行するやつ
+    } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-firestore.js";
+    // ↑これをを書いておくことでdbに対してデータの追加や取得ができるようになる。(※バージョンは合わせる10.11.1のとこ)
+    //ここまでーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーー
+
+
+
+
+    // Your web app's Firebase configuration
+    const firebaseConfig = {
+
+      apiKey: "AIzaSyBEN9vH7Gl7gckY60KvdtnOtlTeQF2Ciy0",//←ここの情報一番重要だから、git addする前に消す！！！
+
+      authDomain: "chat-app-test-9d30d.firebaseapp.com",
+      projectId: "chat-app-test-9d30d",
+      storageBucket: "chat-app-test-9d30d.appspot.com",
+      messagingSenderId: "779333419143",
+      appId: "1:779333419143:web:d3b854ebb27f2b21d23822"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+
+    // ここから自分で追加するーーーーーーーーーーーーーーーー
+    const db = getFirestore(app);
+    // ↑これをを書いておくことでdbに対してデータの追加や取得ができるようになる。
+
+
+    $("#send").on("click", function () {
+      // 送信時に必要な処理
+      const post = {
+        name: $('#name').val(),
+        text: $('#text').val(),
+        time: serverTimestamp(),
+      };
+      console.log(post);
+      addDoc(collection(db, 'chat'), post);
+      $('#text').val('');
+
+    });
+    // ----------------------------------
+
+
+    // データ取得処理
+    onSnapshot(collection(db, "chat"), (querySnapshot) => {
+      console.log(querySnapshot.docs);
+
+
+      // ---------ここから講義資料６.７ーーーーー↑onSnapshotの処理内に追加する！！
+      // 必要なデータのみ抽出した「オブジェクト形式の配列」に変換
+      const documents = [];//空の配列を準備
+      querySnapshot.docs.forEach(function (doc) {
+        const document = {
+          id: doc.id,
+          data: doc.data(),
+        };
+        documents.push(document);
+      });
+
+      console.log(documents);
+
+      //配列から画面表示用のタグを作成
+      const htmlElements = [];
+      documents.forEach(function (document) {
+        htmlElements.push(`
+    <li id="${document.id}">
+      <p>${document.data.name} at ${document.data.time}</p>
+      <p>${document.data.text}</p>
+    </li>
+  `);
+      });
+
+      $("#output").html(htmlElements);
+
+
+    });
+    //↑ここまでonSnapshotの処理ーーーーーーーーーーーーーーーーー
+
+  </script>
+
+
+</body>
+
+</html>
